@@ -87,6 +87,8 @@ Public Function ExtractText(ByVal filePath As String, Optional ByVal extractAtta
             m_CurrentType = "Unknown"
             ExtractText = ""
     End Select
+    
+    CleanupTempFolder
 End Function
 
 Public Function ExtractPages(ByVal filePath As String) As Collection
@@ -125,6 +127,8 @@ Public Function ExtractPages(ByVal filePath As String) As Collection
         Case "eml"
             ExtractPages = ExtractEmlPages(filePath)
     End Select
+    
+    CleanupTempFolder
 End Function
 
 Private Function GetExtension(ByVal filePath As String) As String
@@ -149,6 +153,16 @@ Private Sub EnsureFolder(ByVal folderPath As String)
     On Error Resume Next
     If Len(Dir(folderPath, vbDirectory)) = 0 Then MkDir folderPath
     On Error GoTo 0
+End Sub
+
+Private Sub CleanupTempFolder()
+    If Len(m_TempFolder) > 0 And Len(Dir(m_TempFolder, vbDirectory)) > 0 Then
+        On Error Resume Next
+        Kill m_TempFolder & "\*.*"
+        RmDir m_TempFolder
+        On Error GoTo 0
+        m_TempFolder = ""
+    End If
 End Sub
 
 Private Function NewGuid() As String
@@ -580,7 +594,7 @@ Private Function ExtractImageText(ByVal filePath As String) As String
     
     m_LastStatus = m_WinOCR.LastStatus
     
-    If m_LastStatus <> 0 And Len(ExtractImageText) = 0 Then
+    If Len(ExtractImageText) = 0 Then
         m_LastStatus = m_WinOCR.LastStatus
     End If
 End Function
@@ -644,11 +658,7 @@ Private Function ExtractMsgText(ByVal filePath As String) As String
         bodyText = StripHtmlTags(oItem.HTMLBody)
     End If
     
-    If Len(subject) > 0 Then
-        ExtractMsgText = "[Subject: " & subject & "] " & bodyText
-    Else
-        ExtractMsgText = bodyText
-    End If
+    ExtractMsgText = bodyText
     
     If m_ExtractAttachments And oItem.Attachments.Count > 0 Then
         ExtractMsgText = ExtractMsgText & vbCrLf & ExtractMsgAttachments(oItem)
@@ -695,7 +705,7 @@ Private Function ExtractMsgPages(ByVal filePath As String) As Collection
     End If
     
     If Len(subject) > 0 Then
-        bodyText = "[Subject: " & subject & "] " & bodyText
+        ExtractMsgPages.Add subject
     End If
     
     ExtractMsgPages.Add bodyText
@@ -882,7 +892,7 @@ Private Function ExtractEmlPages(ByVal filePath As String) As Collection
     bodyText = ExtractEmlBody(content, contentType)
     
     If Len(subject) > 0 Then
-        bodyText = "[Subject: " & subject & "] " & bodyText
+        ExtractEmlPages.Add subject
     End If
     
     ExtractEmlPages.Add bodyText
@@ -934,7 +944,7 @@ Private Function ExtractEmlBody(ByVal content As String, ByRef contentTypeOut As
     Dim headerPart As String
     Dim bodyPart As String
     headerPart = Left(content, headerEnd - 1)
-    bodyPart = Mid(content, headerEnd + 1)
+    bodyPart = Mid(content, headerEnd + 2)
     
     Dim lines() As String
     lines = Split(headerPart, vbCrLf)
