@@ -38,32 +38,8 @@ Public Property Get LastStatus() As Long
 End Property
 
 Public Function ExtractText(ByVal filePath As String, Optional ByVal extractAttachments As Boolean = True) As String
-    m_LastStatus = 0
-    m_CurrentDepth = 0
-    m_ExtractAttachments = extractAttachments
-    m_CurrentType = ""
-    m_TempFolder = ""
-    
-    If Len(Dir(filePath)) = 0 Then
-        m_CurrentType = "Unknown"
-        m_LastStatus = 1
-        ExtractText = ""
-        Exit Function
-    End If
-    
-    Dim fSize As Long
-    On Error Resume Next
-    fSize = FileLen(filePath)
-    On Error GoTo 0
-    If fSize > MaxFileSizeBytes Then
-        m_CurrentType = "TooLarge"
-        m_LastStatus = 2
-        ExtractText = ""
-        Exit Function
-    End If
-    
     Dim pages As Collection
-    Set pages = ExtractPages(filePath)
+    Set pages = ExtractPages(filePath, extractAttachments)
     
     If pages.Count > 0 Then
         Dim i As Long
@@ -77,20 +53,29 @@ Public Function ExtractText(ByVal filePath As String, Optional ByVal extractAtta
     If Len(ExtractText) = 0 And m_LastStatus = 0 Then
         m_LastStatus = 99
     End If
-    
-    CleanupTempFolder
 End Function
 
-Public Function ExtractPages(ByVal filePath As String) As Collection
+Public Function ExtractPages(ByVal filePath As String, Optional ByVal extractAttachments As Boolean = True) As Collection
     Set ExtractPages = New Collection
     m_LastStatus = 0
     m_CurrentDepth = 0
+    m_ExtractAttachments = extractAttachments
     m_CurrentType = ""
     m_TempFolder = ""
-    m_ExtractAttachments = True
     
     If Len(Dir(filePath)) = 0 Then
-        m_CurrentType = ""
+        m_CurrentType = "Unknown"
+        m_LastStatus = 1
+        Exit Function
+    End If
+    
+    Dim fSize As Long
+    On Error Resume Next
+    fSize = FileLen(filePath)
+    On Error GoTo 0
+    If fSize > MaxFileSizeBytes Then
+        m_CurrentType = "TooLarge"
+        m_LastStatus = 2
         Exit Function
     End If
     
@@ -118,6 +103,10 @@ Public Function ExtractPages(ByVal filePath As String) As Collection
             Set ExtractPages = ExtractEmlPages(filePath)
     End Select
     
+    If ExtractPages.Count = 0 And m_LastStatus = 0 Then
+        m_LastStatus = 99
+    End If
+	
     CleanupTempFolder
 End Function
 
