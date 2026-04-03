@@ -15,6 +15,7 @@ Private Const MaxFileSizeBytes As Long = 30 * 1024 * 1024
 Private m_PdfParser As PdfParser
 Private m_WinOCR As WinOCR
 Private m_WdCOM As WdCOM
+Private m_Outlook As Object
 Private m_CurrentType As String
 Private m_CurrentDepth As Long
 Private m_ExtractAttachments As Boolean
@@ -163,6 +164,13 @@ Private Sub CleanupTempFolder()
         On Error GoTo 0
         m_TempFolder = ""
     End If
+    
+    If Not m_Outlook Is Nothing Then
+        On Error Resume Next
+        m_Outlook.Quit
+        Set m_Outlook = Nothing
+        On Error GoTo 0
+    End If
 End Sub
 
 Private Function NewGuid() As String
@@ -184,7 +192,6 @@ Private Declare PtrSafe Function CoCreateGuid Lib "ole32" (ByRef pguid As GUID) 
 
 Private Function ExtractPdfText(ByVal filePath As String) As String
     m_CurrentType = "Pdf"
-    m_LastStatus = Parser.LastStatus
     ExtractPdfText = Parser.ExtractText(filePath)
     m_LastStatus = Parser.LastStatus
 End Function
@@ -593,10 +600,6 @@ Private Function ExtractImageText(ByVal filePath As String) As String
     End If
     
     m_LastStatus = m_WinOCR.LastStatus
-    
-    If Len(ExtractImageText) = 0 Then
-        m_LastStatus = m_WinOCR.LastStatus
-    End If
 End Function
 
 Private Function ExtractImagePages(ByVal filePath As String) As Collection
@@ -615,15 +618,22 @@ Private Function ExtractImagePages(ByVal filePath As String) As Collection
 End Function
 
 Private Function GetOutlookInstance() As Object
+    If Not m_Outlook Is Nothing Then
+        Set GetOutlookInstance = m_Outlook
+        Exit Function
+    End If
+    
     On Error Resume Next
-    Set GetOutlookInstance = GetObject(, "Outlook.Application")
+    Set m_Outlook = GetObject(, "Outlook.Application")
     On Error GoTo 0
     
-    If GetOutlookInstance Is Nothing Then
+    If m_Outlook Is Nothing Then
         On Error Resume Next
-        Set GetOutlookInstance = CreateObject("Outlook.Application")
+        Set m_Outlook = CreateObject("Outlook.Application")
         On Error GoTo 0
     End If
+    
+    Set GetOutlookInstance = m_Outlook
 End Function
 
 Private Function ExtractMsgText(ByVal filePath As String) As String
@@ -1205,7 +1215,7 @@ Private Function DecodeBase64Attachment(ByVal part As String) As Byte()
     If base64Start = 0 Then Exit Function
     
     Dim encodedPart As String
-    encodedPart = Trim(Mid(part, base64Start + 4))
+    encodedPart = Mid(part, base64Start + 4)
     
     Dim xmlDoc As Object
     Set xmlDoc = CreateObject("Msxml2.DOMDocument")
