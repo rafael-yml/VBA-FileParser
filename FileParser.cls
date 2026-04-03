@@ -6,7 +6,7 @@ Attribute VB_Name = "FileParser"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = True
+Attribute VB_Exposed = False
 Option Explicit
 
 Private Const MaxRecursionDepth As Long = 5
