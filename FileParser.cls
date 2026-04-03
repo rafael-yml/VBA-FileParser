@@ -151,14 +151,6 @@ Private Sub CleanupTempFolder()
     End If
 End Sub
 
-Private Function NewGuid() As String
-    Dim g As Type GUID
-    Dim s As String
-    CoCreateGuid g
-    s = Right$("00000000" & Hex$(g.Data1), 8) & Right$("0000" & Hex$(g.Data2), 4) & Right$("0000" & Hex$(g.Data3), 4)
-    NewGuid = s
-End Function
-
 Private Type GUID
     Data1 As Long
     Data2 As Integer
@@ -167,6 +159,14 @@ Private Type GUID
 End Type
 
 Private Declare PtrSafe Function CoCreateGuid Lib "ole32" (ByRef pguid As GUID) As Long
+
+Private Function NewGuid() As String
+    Dim g As GUID
+    Dim s As String
+    CoCreateGuid g
+    s = Right$("00000000" & Hex$(g.Data1), 8) & Right$("0000" & Hex$(g.Data2), 4) & Right$("0000" & Hex$(g.Data3), 4)
+    NewGuid = s
+End Function
 
 Private Function GetOutlookInstance() As Object
     If Not m_Outlook Is Nothing Then
