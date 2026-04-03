@@ -1,6 +1,6 @@
 # VBA-FileParser
 
-A comprehensive VBA class library for extracting text from various file formats including PDF, Excel, Word, TXT, HTML, XML, Images, and Email files (.msg, .eml).
+A comprehensive VBA class library for extracting text from various file formats including PDF (using [PdfParser](https://github.com/rafael-yml/VBA-PdfParser)), Excel, Word, TXT, HTML, XML, Images, and Email files (.msg, .eml).
 
 ## Features
 
@@ -19,25 +19,16 @@ A comprehensive VBA class library for extracting text from various file formats 
 
 ## Installation
 
-1. Clone the repository with submodules:
-   ```bash
-   git clone --recurse-submodules https://github.com/your-repo/VBA-FileParser.git
-   ```
-   Or initialize submodules after cloning:
-   ```bash
-   git submodule update --init --recursive
-   ```
-
-2. In your VBA project, add the following files:
+1. In your VBA project, import the following files:
    - `FileParser.cls` (main class)
    - From `helpers/PdfParser/`:
-     - `PdfParser.cls`
+     - `PdfParser.cls` (pdf wrapper class)
      - `helpers/PdfTXT/PdfTXT.cls`
      - `helpers/PdfWRT/PdfWRT.cls`
      - `helpers/WinOCR/WinOCR.cls`
      - `helpers/WdCOM/WdCOM.cls`
 
-3. Required References (in VBA Editor > Tools > References):
+2. Required References (in VBA Editor > Tools > References):
    - Microsoft Scripting Runtime
    - Microsoft XML, v6.0 (for XML parsing)
    - Microsoft HTML Object Library (for HTML parsing)

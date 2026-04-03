@@ -62,32 +62,21 @@ Public Function ExtractText(ByVal filePath As String, Optional ByVal extractAtta
         Exit Function
     End If
     
-    Dim ext As String
-    ext = LCase(GetExtension(filePath))
+    Dim pages As Collection
+    Set pages = ExtractPages(filePath)
     
-    Select Case ext
-        Case "pdf"
-            ExtractText = ExtractPdfText(filePath)
-        Case "xls", "xlsx", "xlsb", "xlsm"
-            ExtractText = ExtractExcelText(filePath)
-        Case "doc", "docx", "docm"
-            ExtractText = ExtractWordText(filePath)
-        Case "txt", "csv"
-            ExtractText = ExtractTextFile(filePath)
-        Case "html", "htm"
-            ExtractText = ExtractHtmlText(filePath)
-        Case "xml"
-            ExtractText = ExtractXmlText(filePath)
-        Case "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "tif"
-            ExtractText = ExtractImageText(filePath)
-        Case "msg"
-            ExtractText = ExtractMsgText(filePath)
-        Case "eml"
-            ExtractText = ExtractEmlText(filePath)
-        Case Else
-            m_CurrentType = "Unknown"
-            ExtractText = ""
-    End Select
+    If pages.Count > 0 Then
+        Dim i As Long
+        For i = 1 To pages.Count
+            If Len(pages(i)) > 0 Then
+                ExtractText = ExtractText & pages(i) & vbCrLf
+            End If
+        Next
+    End If
+    
+    If Len(ExtractText) = 0 And m_LastStatus = 0 Then
+        m_LastStatus = 99
+    End If
     
     CleanupTempFolder
 End Function
@@ -110,23 +99,23 @@ Public Function ExtractPages(ByVal filePath As String) As Collection
     
     Select Case ext
         Case "pdf"
-            ExtractPages = ExtractPdfPages(filePath)
+            Set ExtractPages = ExtractPdfPages(filePath)
         Case "xls", "xlsx", "xlsb", "xlsm"
-            ExtractPages = ExtractExcelPages(filePath)
+            Set ExtractPages = ExtractExcelPages(filePath)
         Case "doc", "docx", "docm"
-            ExtractPages = ExtractWordPages(filePath)
+            Set ExtractPages = ExtractWordPages(filePath)
         Case "txt", "csv"
-            ExtractPages = ExtractTextPages(filePath)
+            Set ExtractPages = ExtractTextPages(filePath)
         Case "html", "htm"
-            ExtractPages = ExtractHtmlPages(filePath)
+            Set ExtractPages = ExtractHtmlPages(filePath)
         Case "xml"
-            ExtractPages = ExtractXmlPages(filePath)
+            Set ExtractPages = ExtractXmlPages(filePath)
         Case "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "tif"
-            ExtractPages = ExtractImagePages(filePath)
+            Set ExtractPages = ExtractImagePages(filePath)
         Case "msg"
-            ExtractPages = ExtractMsgPages(filePath)
+            Set ExtractPages = ExtractMsgPages(filePath)
         Case "eml"
-            ExtractPages = ExtractEmlPages(filePath)
+            Set ExtractPages = ExtractEmlPages(filePath)
     End Select
     
     CleanupTempFolder
@@ -190,76 +179,30 @@ End Type
 
 Private Declare PtrSafe Function CoCreateGuid Lib "ole32" (ByRef pguid As GUID) As Long
 
-Private Function ExtractPdfText(ByVal filePath As String) As String
-    m_CurrentType = "Pdf"
-    ExtractPdfText = Parser.ExtractText(filePath)
-    m_LastStatus = Parser.LastStatus
-End Function
-
-Private Function ExtractPdfPages(ByVal filePath As String) As Collection
-    m_CurrentType = "Pdf"
-    Set ExtractPdfPages = Parser.ExtractPages(filePath)
-End Function
-
-Private Function ExtractExcelText(ByVal filePath As String) As String
-    m_CurrentType = "Excel"
-    ExtractExcelText = ExtractExcelTextCore(filePath)
-    
-    If Len(ExtractExcelText) = 0 And m_CurrentDepth < MaxRecursionDepth Then
-        m_CurrentDepth = m_CurrentDepth + 1
-        ExtractExcelText = FallbackWordPdfToOCR(filePath)
-        m_CurrentDepth = m_CurrentDepth - 1
-    End If
-End Function
-
-Private Function ExtractExcelTextCore(ByVal filePath As String) As String
-    ExtractExcelTextCore = ""
-    m_LastStatus = 0
-    
-    Dim wb As Object
-    Dim ws As Object
-    Dim lastRow As Long, lastCol As Long
-    Dim r As Long, c As Long
-    Dim cellValue As Variant
-    
-    On Error Resume Next
-    Set wb = Application.Workbooks.Open(filePath, ReadOnly:=True, UpdateLinks:=False)
-    On Error GoTo 0
-    
-    If wb Is Nothing Then
-        m_LastStatus = 10
+Private Function GetOutlookInstance() As Object
+    If Not m_Outlook Is Nothing Then
+        Set GetOutlookInstance = m_Outlook
         Exit Function
     End If
     
     On Error Resume Next
-    wb.Windows(1).Visible = False
+    Set m_Outlook = GetObject(, "Outlook.Application")
     On Error GoTo 0
     
-    Set ws = wb.ActiveSheet
-    On Error Resume Next
-    lastRow = ws.Cells.SpecialCells(xlCellTypeLastCell).Row
-    lastCol = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
-    On Error GoTo 0
+    If m_Outlook Is Nothing Then
+        On Error Resume Next
+        Set m_Outlook = CreateObject("Outlook.Application")
+        On Error GoTo 0
+    End If
     
-    If lastRow = 0 Then lastRow = 1
-    If lastCol = 0 Then lastCol = 1
-    
-    For r = 1 To lastRow
-        For c = 1 To lastCol
-            On Error Resume Next
-            cellValue = ws.Cells(r, c).Value
-            On Error GoTo 0
-            If Not IsEmpty(cellValue) Then
-                ExtractExcelTextCore = ExtractExcelTextCore & CStr(cellValue) & " "
-            End If
-        Next c
-        If lastCol > 0 Then ExtractExcelTextCore = ExtractExcelTextCore & vbCrLf
-    Next r
-    
-    If Len(ExtractExcelTextCore) = 0 Then m_LastStatus = 11
-    
-    wb.Close SaveChanges:=False
-    Set wb = Nothing
+    Set GetOutlookInstance = m_Outlook
+End Function
+
+Private Function ExtractPdfPages(ByVal filePath As String) As Collection
+    Set ExtractPdfPages = New Collection
+    m_CurrentType = "Pdf"
+    Set ExtractPdfPages = Parser.ExtractPages(filePath)
+    m_LastStatus = Parser.LastStatus
 End Function
 
 Private Function ExtractExcelPages(ByVal filePath As String) As Collection
@@ -281,6 +224,7 @@ Private Function ExtractExcelPages(ByVal filePath As String) As Collection
     
     If wb Is Nothing Then
         m_LastStatus = 10
+        Set ExtractExcelPages = FallbackToPdf(filePath)
         Exit Function
     End If
     
@@ -316,32 +260,11 @@ Private Function ExtractExcelPages(ByVal filePath As String) As Collection
     wb.Close SaveChanges:=False
     Set wb = Nothing
     
+    If ExtractExcelPages.Count = 0 And m_CurrentDepth < MaxRecursionDepth Then
+        Set ExtractExcelPages = FallbackToPdf(filePath)
+    End If
+    
     If ExtractExcelPages.Count = 0 Then m_LastStatus = 11
-End Function
-
-Private Function ExtractWordText(ByVal filePath As String) As String
-    m_CurrentType = "Word"
-    ExtractWordText = ExtractWordTextCore(filePath)
-    
-    If Len(ExtractWordText) = 0 And m_CurrentDepth < MaxRecursionDepth Then
-        m_CurrentDepth = m_CurrentDepth + 1
-        ExtractWordText = FallbackWordPdfToOCR(filePath)
-        m_CurrentDepth = m_CurrentDepth - 1
-    End If
-End Function
-
-Private Function ExtractWordTextCore(ByVal filePath As String) As String
-    ExtractWordTextCore = ""
-    m_LastStatus = 0
-    
-    If m_WdCOM Is Nothing Then Set m_WdCOM = New WdCOM
-    
-    ExtractWordTextCore = m_WdCOM.ExtractText(filePath)
-    m_LastStatus = m_WdCOM.LastStatus
-    
-    If m_LastStatus <> 0 Then
-        ExtractWordTextCore = ""
-    End If
 End Function
 
 Private Function ExtractWordPages(ByVal filePath As String) As Collection
@@ -349,62 +272,31 @@ Private Function ExtractWordPages(ByVal filePath As String) As Collection
     m_CurrentType = "Word"
     m_LastStatus = 0
     
-    Dim oWord As Object
-    Dim oDoc As Object
-    Dim i As Long
-    Dim pageText As String
+    If m_WdCOM Is Nothing Then Set m_WdCOM = New WdCOM
     
-    On Error Resume Next
-    Set oWord = GetObject(, "Word.Application")
-    On Error GoTo 0
+    Dim text As String
+    text = m_WdCOM.ExtractText(filePath)
+    m_LastStatus = m_WdCOM.LastStatus
     
-    If oWord Is Nothing Then
-        On Error Resume Next
-        Set oWord = CreateObject("Word.Application")
-        On Error GoTo 0
+    If Len(text) > 0 Then
+        ExtractWordPages.Add text
     End If
     
-    If oWord Is Nothing Then
-        m_LastStatus = 20
-        Exit Function
+    If ExtractWordPages.Count = 0 And m_CurrentDepth < MaxRecursionDepth Then
+        Set ExtractWordPages = FallbackToPdf(filePath)
     End If
     
-    oWord.Visible = False
-    oWord.DisplayAlerts = 0
-    
-    On Error Resume Next
-    Set oDoc = oWord.Documents.Open(filePath, ConfirmConversions:=False, ReadOnly:=True, AddToRecentFiles:=False, NoEncodingDialog:=True)
-    On Error GoTo 0
-    
-    If oDoc Is Nothing Then
-        m_LastStatus = 21
-        oWord.Quit
-        Set oWord = Nothing
-        Exit Function
-    End If
-    
-    For i = 1 To oDoc.ComputeStatistics(2)
-        On Error Resume Next
-        oDoc.Bookmarks("\Page").Range.Select
-        pageText = oWord.Selection.Text
-        On Error GoTo 0
-        If Len(pageText) > 0 Then
-            ExtractWordPages.Add pageText
-        End If
-    Next i
-    
-    If ExtractWordPages.Count = 0 Then
-        ExtractWordPages.Add oDoc.Content.Text
-    End If
-    
-    oDoc.Close SaveChanges:=False
-    oWord.Quit
-    Set oDoc = Nothing
-    Set oWord = Nothing
+    If ExtractWordPages.Count = 0 Then m_LastStatus = 21
 End Function
 
-Private Function FallbackWordPdfToOCR(ByVal filePath As String) As String
-    FallbackWordPdfToOCR = ""
+Private Function FallbackToPdf(ByVal filePath As String) As Collection
+    Set FallbackToPdf = New Collection
+    
+    m_CurrentDepth = m_CurrentDepth + 1
+    If m_CurrentDepth > MaxRecursionDepth Then
+        m_CurrentDepth = m_CurrentDepth - 1
+        Exit Function
+    End If
     
     Dim tempPdf As String
     tempPdf = GetTempFolder() & "_fallback.pdf"
@@ -447,14 +339,18 @@ Private Function FallbackWordPdfToOCR(ByVal filePath As String) As String
     Set oWord = Nothing
     
     If Len(Dir(tempPdf)) > 0 Then
-        FallbackWordPdfToOCR = Parser.ExtractText(tempPdf)
+        Set FallbackToPdf = Parser.ExtractPages(tempPdf)
+        m_CurrentType = "Pdf"
         On Error Resume Next
         Kill tempPdf
         On Error GoTo 0
     End If
+    
+    m_CurrentDepth = m_CurrentDepth - 1
 End Function
 
-Private Function ExtractTextFile(ByVal filePath As String) As String
+Private Function ExtractTextPages(ByVal filePath As String) As Collection
+    Set ExtractTextPages = New Collection
     m_CurrentType = "Text"
     m_LastStatus = 0
     
@@ -471,21 +367,11 @@ Private Function ExtractTextFile(ByVal filePath As String) As String
         Exit Function
     End If
     
-    ExtractTextFile = file.ReadAll
+    Dim content As String
+    content = file.ReadAll
     file.Close
     Set file = Nothing
     Set fso = Nothing
-    
-    If Len(ExtractTextFile) = 0 Then m_LastStatus = 31
-End Function
-
-Private Function ExtractTextPages(ByVal filePath As String) As Collection
-    Set ExtractTextPages = New Collection
-    m_CurrentType = "Text"
-    m_LastStatus = 0
-    
-    Dim content As String
-    content = ExtractTextFile(filePath)
     
     If Len(content) > 0 Then
         ExtractTextPages.Add content
@@ -494,13 +380,13 @@ Private Function ExtractTextPages(ByVal filePath As String) As Collection
     End If
 End Function
 
-Private Function ExtractHtmlText(ByVal filePath As String) As String
+Private Function ExtractHtmlPages(ByVal filePath As String) As Collection
+    Set ExtractHtmlPages = New Collection
     m_CurrentType = "Html"
     m_LastStatus = 0
     
     Dim fso As Object
     Dim file As Object
-    Dim htmlDoc As Object
     
     Set fso = CreateObject("Scripting.FileSystemObject")
     On Error Resume Next
@@ -518,32 +404,24 @@ Private Function ExtractHtmlText(ByVal filePath As String) As String
     Set file = Nothing
     Set fso = Nothing
     
+    Dim htmlDoc As Object
     On Error Resume Next
     Set htmlDoc = CreateObject("MSHTML.HTMLFile")
     htmlDoc.Body.innerHTML = htmlContent
-    ExtractHtmlText = htmlDoc.Body.innerText
+    Dim text As String
+    text = htmlDoc.Body.innerText
     Set htmlDoc = Nothing
     On Error GoTo 0
     
-    If Len(ExtractHtmlText) = 0 Then m_LastStatus = 41
-End Function
-
-Private Function ExtractHtmlPages(ByVal filePath As String) As Collection
-    Set ExtractHtmlPages = New Collection
-    m_CurrentType = "Html"
-    m_LastStatus = 0
-    
-    Dim content As String
-    content = ExtractHtmlText(filePath)
-    
-    If Len(content) > 0 Then
-        ExtractHtmlPages.Add content
+    If Len(text) > 0 Then
+        ExtractHtmlPages.Add text
     Else
         m_LastStatus = 41
     End If
 End Function
 
-Private Function ExtractXmlText(ByVal filePath As String) As String
+Private Function ExtractXmlPages(ByVal filePath As String) As Collection
+    Set ExtractXmlPages = New Collection
     m_CurrentType = "Xml"
     m_LastStatus = 0
     
@@ -560,31 +438,21 @@ Private Function ExtractXmlText(ByVal filePath As String) As String
         Exit Function
     End If
     
+    Dim text As String
     If Not xmlDoc.DocumentElement Is Nothing Then
-        ExtractXmlText = xmlDoc.DocumentElement.Text
-    Else
-        m_LastStatus = 51
+        text = xmlDoc.DocumentElement.Text
     End If
-    
     Set xmlDoc = Nothing
-End Function
-
-Private Function ExtractXmlPages(ByVal filePath As String) As Collection
-    Set ExtractXmlPages = New Collection
-    m_CurrentType = "Xml"
-    m_LastStatus = 0
     
-    Dim content As String
-    content = ExtractXmlText(filePath)
-    
-    If Len(content) > 0 Then
-        ExtractXmlPages.Add content
+    If Len(text) > 0 Then
+        ExtractXmlPages.Add text
     Else
         m_LastStatus = 51
     End If
 End Function
 
-Private Function ExtractImageText(ByVal filePath As String) As String
+Private Function ExtractImagePages(ByVal filePath As String) As Collection
+    Set ExtractImagePages = New Collection
     m_CurrentType = "Image"
     m_LastStatus = 0
     
@@ -593,92 +461,20 @@ Private Function ExtractImageText(ByVal filePath As String) As String
     Dim vResult As Variant
     vResult = m_WinOCR.ImageToText(filePath, "", False)
     
+    Dim text As String
     If IsArray(vResult) Then
         If UBound(vResult) >= 0 Then
-            ExtractImageText = CStr(vResult(0))
+            text = CStr(vResult(0))
         End If
     End If
     
     m_LastStatus = m_WinOCR.LastStatus
-End Function
-
-Private Function ExtractImagePages(ByVal filePath As String) As Collection
-    Set ExtractImagePages = New Collection
-    m_CurrentType = "Image"
-    m_LastStatus = 0
     
-    Dim content As String
-    content = ExtractImageText(filePath)
-    
-    If Len(content) > 0 Then
-        ExtractImagePages.Add content
+    If Len(text) > 0 Then
+        ExtractImagePages.Add text
     ElseIf m_LastStatus = 0 Then
         m_LastStatus = 60
     End If
-End Function
-
-Private Function GetOutlookInstance() As Object
-    If Not m_Outlook Is Nothing Then
-        Set GetOutlookInstance = m_Outlook
-        Exit Function
-    End If
-    
-    On Error Resume Next
-    Set m_Outlook = GetObject(, "Outlook.Application")
-    On Error GoTo 0
-    
-    If m_Outlook Is Nothing Then
-        On Error Resume Next
-        Set m_Outlook = CreateObject("Outlook.Application")
-        On Error GoTo 0
-    End If
-    
-    Set GetOutlookInstance = m_Outlook
-End Function
-
-Private Function ExtractMsgText(ByVal filePath As String) As String
-    m_CurrentType = "Msg"
-    m_LastStatus = 0
-    
-    Dim oOutlook As Object
-    Dim oItem As Object
-    Dim bodyText As String
-    Dim subject As String
-    
-    Set oOutlook = GetOutlookInstance()
-    If oOutlook Is Nothing Then
-        m_LastStatus = 70
-        Exit Function
-    End If
-    
-    On Error Resume Next
-    Set oItem = oOutlook.Session.OpenSharedItem(filePath)
-    On Error GoTo 0
-    
-    If oItem Is Nothing Then
-        m_LastStatus = 71
-        Set oOutlook = Nothing
-        Exit Function
-    End If
-    
-    subject = oItem.Subject
-    If Len(oItem.Body) > 0 Then
-        bodyText = oItem.Body
-    ElseIf Len(oItem.HTMLBody) > 0 Then
-        bodyText = StripHtmlTags(oItem.HTMLBody)
-    End If
-    
-    ExtractMsgText = bodyText
-    
-    If m_ExtractAttachments And oItem.Attachments.Count > 0 Then
-        ExtractMsgText = ExtractMsgText & vbCrLf & ExtractMsgAttachments(oItem)
-    End If
-    
-    oItem.Close 0
-    Set oItem = Nothing
-    Set oOutlook = Nothing
-    
-    If Len(ExtractMsgText) = 0 Then m_LastStatus = 72
 End Function
 
 Private Function ExtractMsgPages(ByVal filePath As String) As Collection
@@ -736,49 +532,8 @@ Private Function ExtractMsgPages(ByVal filePath As String) As Collection
     oItem.Close 0
     Set oItem = Nothing
     Set oOutlook = Nothing
-End Function
-
-Private Function ExtractMsgAttachments(ByVal oItem As Object) As String
-    ExtractMsgAttachments = ""
     
-    m_CurrentDepth = m_CurrentDepth + 1
-    If m_CurrentDepth > MaxRecursionDepth Then
-        m_CurrentDepth = m_CurrentDepth - 1
-        Exit Function
-    End If
-    
-    Dim tempFolder As String
-    tempFolder = GetTempFolder()
-    
-    Dim att As Object
-    Dim tempPath As String
-    Dim attText As String
-    Dim prevType As String
-    Dim ext As String
-    
-    For Each att In oItem.Attachments
-        ext = LCase(GetExtension(att.FileName))
-        tempPath = tempFolder & "\" & NewGuid() & "." & ext
-        
-        On Error Resume Next
-        att.SaveAsFile tempPath
-        On Error GoTo 0
-        
-        If Len(Dir(tempPath)) > 0 Then
-            prevType = m_CurrentType
-            attText = ExtractText(tempPath, m_ExtractAttachments)
-            If Len(attText) > 0 Then
-                ExtractMsgAttachments = ExtractMsgAttachments & vbCrLf & attText
-            End If
-            m_CurrentType = prevType
-            
-            On Error Resume Next
-            Kill tempPath
-            On Error GoTo 0
-        End If
-    Next
-    
-    m_CurrentDepth = m_CurrentDepth - 1
+    If ExtractMsgPages.Count <= 1 And Len(bodyText) = 0 Then m_LastStatus = 72
 End Function
 
 Private Function ExtractMsgAttachmentsAsCollection(ByVal oItem As Object) As Collection
@@ -825,49 +580,6 @@ Private Function ExtractMsgAttachmentsAsCollection(ByVal oItem As Object) As Col
     Next
     
     m_CurrentDepth = m_CurrentDepth - 1
-End Function
-
-Private Function ExtractEmlText(ByVal filePath As String) As String
-    m_CurrentType = "Eml"
-    m_LastStatus = 0
-    
-    Dim fso As Object
-    Dim file As Object
-    
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    On Error Resume Next
-    Set file = fso.OpenTextFile(filePath, 1)
-    On Error GoTo 0
-    
-    If file Is Nothing Then
-        m_LastStatus = 80
-        Exit Function
-    End If
-    
-    Dim content As String
-    content = file.ReadAll
-    file.Close
-    Set file = Nothing
-    Set fso = Nothing
-    
-    Dim subject As String
-    Dim bodyText As String
-    Dim contentType As String
-    
-    subject = ExtractEmlHeader(content, "Subject")
-    bodyText = ExtractEmlBody(content, contentType)
-    
-    If Len(subject) > 0 Then
-        ExtractEmlText = "[Subject: " & subject & "] " & bodyText
-    Else
-        ExtractEmlText = bodyText
-    End If
-    
-    If m_ExtractAttachments Then
-        ExtractEmlText = ExtractEmlText & vbCrLf & ExtractEmlAttachments(content)
-    End If
-    
-    If Len(ExtractEmlText) = 0 Then m_LastStatus = 81
 End Function
 
 Private Function ExtractEmlPages(ByVal filePath As String) As Collection
@@ -919,6 +631,8 @@ Private Function ExtractEmlPages(ByVal filePath As String) As Collection
             m_CurrentDepth = m_CurrentDepth - 1
         End If
     End If
+    
+    If ExtractEmlPages.Count <= 1 And Len(bodyText) = 0 Then m_LastStatus = 81
 End Function
 
 Private Function ExtractEmlHeader(ByVal content As String, ByVal headerName As String) As String
@@ -929,14 +643,11 @@ Private Function ExtractEmlHeader(ByVal content As String, ByVal headerName As S
     
     Dim i As Long
     Dim headerLine As String
-    Dim headerValue As String
     
     For i = LBound(lines) To UBound(lines)
         headerLine = LCase(lines(i))
         If Left(headerLine, Len(headerName) + 1) = LCase(headerName) & ":" Then
-            headerValue = Trim(Mid(lines(i), Len(headerName) + 2))
-            headerValue = DecodeQuotedPrintable(headerValue)
-            ExtractEmlHeader = headerValue
+            ExtractEmlHeader = DecodeQuotedPrintable(Trim(Mid(lines(i), Len(headerName) + 2)))
             Exit Function
         End If
     Next i
@@ -991,7 +702,6 @@ Private Function DecodeQuotedPrintable(ByVal text As String) As String
     Dim i As Long
     Dim c As String
     Dim hexVal As String
-    Dim charCode As Long
     
     For i = 1 To Len(text)
         c = Mid(text, i, 1)
@@ -1004,8 +714,7 @@ Private Function DecodeQuotedPrintable(ByVal text As String) As String
                     If UCase(hexVal) = "0D0A" Then i = i + 1
                     result = result & vbCrLf
                 ElseIf IsNumeric("&H" & hexVal) Then
-                    charCode = CLng("&H" & hexVal)
-                    result = result & Chr(charCode)
+                    result = result & Chr(CLng("&H" & hexVal))
                     i = i + 2
                 Else
                     result = result & c
@@ -1019,74 +728,6 @@ Private Function DecodeQuotedPrintable(ByVal text As String) As String
     Next i
     
     DecodeQuotedPrintable = result
-End Function
-
-Private Function ExtractEmlAttachments(ByVal emlContent As String) As String
-    ExtractEmlAttachments = ""
-    
-    m_CurrentDepth = m_CurrentDepth + 1
-    If m_CurrentDepth > MaxRecursionDepth Then
-        m_CurrentDepth = m_CurrentDepth - 1
-        Exit Function
-    End If
-    
-    Dim boundary As String
-    boundary = ExtractBoundary(emlContent)
-    
-    If Len(boundary) = 0 Then
-        m_CurrentDepth = m_CurrentDepth - 1
-        Exit Function
-    End If
-    
-    Dim parts() As String
-    parts = Split(emlContent, "--" & boundary)
-    
-    Dim i As Long
-    Dim part As String
-    Dim filename As String
-    Dim decodedBytes() As Byte
-    Dim tempPath As String
-    Dim attText As String
-    Dim prevType As String
-    Dim ext As String
-    
-    For i = LBound(parts) To UBound(parts)
-        part = parts(i)
-        
-        filename = ExtractFilename(part)
-        If Len(filename) > 0 Then
-            decodedBytes = DecodeBase64Attachment(part)
-            
-            If UBound(decodedBytes) >= 0 Then
-                ext = LCase(GetExtension(filename))
-                If Len(ext) = 0 Then ext = "bin"
-                tempPath = GetTempFolder() "\" & NewGuid() & "." & ext
-                
-                On Error Resume Next
-                Dim fNum As Integer
-                fNum = FreeFile
-                Open tempPath For Binary As #fNum
-                Put #fNum, , decodedBytes
-                Close #fNum
-                On Error GoTo 0
-                
-                If Len(Dir(tempPath)) > 0 Then
-                    prevType = m_CurrentType
-                    attText = ExtractText(tempPath, m_ExtractAttachments)
-                    If Len(attText) > 0 Then
-                        ExtractEmlAttachments = ExtractEmlAttachments & vbCrLf & attText
-                    End If
-                    m_CurrentType = prevType
-                    
-                    On Error Resume Next
-                    Kill tempPath
-                    On Error GoTo 0
-                End If
-            End If
-        End If
-    Next i
-    
-    m_CurrentDepth = m_CurrentDepth - 1
 End Function
 
 Private Function ExtractEmlAttachmentsAsCollection(ByVal emlContent As String) As Collection
@@ -1116,6 +757,7 @@ Private Function ExtractEmlAttachmentsAsCollection(ByVal emlContent As String) A
     Dim page As Variant
     Dim prevType As String
     Dim ext As String
+    Dim fNum As Integer
     
     For i = LBound(parts) To UBound(parts)
         part = parts(i)
@@ -1127,10 +769,9 @@ Private Function ExtractEmlAttachmentsAsCollection(ByVal emlContent As String) A
             If UBound(decodedBytes) >= 0 Then
                 ext = LCase(GetExtension(filename))
                 If Len(ext) = 0 Then ext = "bin"
-                tempPath = GetTempFolder() "\" & NewGuid() & "." & ext
+                tempPath = GetTempFolder() & "\" & NewGuid() & "." & ext
                 
                 On Error Resume Next
-                Dim fNum As Integer
                 fNum = FreeFile
                 Open tempPath For Binary As #fNum
                 Put #fNum, , decodedBytes
@@ -1139,12 +780,14 @@ Private Function ExtractEmlAttachmentsAsCollection(ByVal emlContent As String) A
                 
                 If Len(Dir(tempPath)) > 0 Then
                     prevType = m_CurrentType
+                    
                     Set attPages = ExtractPages(tempPath)
                     For Each page In attPages
                         If Len(CStr(page)) > 0 Then
                             ExtractEmlAttachmentsAsCollection.Add page
                         End If
                     Next
+                    
                     m_CurrentType = prevType
                     
                     On Error Resume Next
@@ -1207,15 +850,8 @@ Private Function DecodeBase64Attachment(ByVal part As String) As Byte()
     
     Dim base64Start As Long
     base64Start = InStr(part, vbCrLf & vbCrLf)
-    
-    If base64Start = 0 Then
-        base64Start = InStr(part, vbLf & vbLf)
-    End If
-    
+    If base64Start = 0 Then base64Start = InStr(part, vbLf & vbLf)
     If base64Start = 0 Then Exit Function
-    
-    Dim encodedPart As String
-    encodedPart = Mid(part, base64Start + 4)
     
     Dim xmlDoc As Object
     Set xmlDoc = CreateObject("Msxml2.DOMDocument")
@@ -1223,7 +859,7 @@ Private Function DecodeBase64Attachment(ByVal part As String) As Byte()
     Dim node As Object
     Set node = xmlDoc.createElement("b64")
     node.DataType = "bin.base64"
-    node.Text = encodedPart
+    node.Text = Mid(part, base64Start + 4)
     
     DecodeBase64Attachment = node.NodeTypedValue
     
