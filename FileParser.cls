@@ -9,6 +9,19 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
+Private Type GUID
+    Data1 As Long
+    Data2 As Integer
+    Data3 As Integer
+    Data4(0 To 7) As Byte
+End Type
+
+#If VBA7 Then
+    Private Declare PtrSafe Function CoCreateGuid Lib "ole32" (ByRef pguid As GUID) As Long
+#Else
+    Private Declare Function CoCreateGuid Lib "ole32" (ByRef pguid As GUID) As Long
+#End If
+
 Private Const MaxRecursionDepth As Long = 5
 Private Const MaxFileSizeBytes As Long = 30 * 1024 * 1024
 
@@ -21,6 +34,14 @@ Private m_CurrentDepth As Long
 Private m_ExtractAttachments As Boolean
 Private m_LastStatus As Long
 Private m_TempFolder As String
+
+Private Sub Class_Initialize()
+    m_CurrentType = ""
+    m_CurrentDepth = 0
+    m_ExtractAttachments = True
+    m_LastStatus = 0
+    m_TempFolder = ""
+End Sub
 
 Public Property Get Parser() As PdfParser
     If m_PdfParser Is Nothing Then
@@ -106,7 +127,7 @@ Public Function ExtractPages(ByVal filePath As String, Optional ByVal extractAtt
     If ExtractPages.Count = 0 And m_LastStatus = 0 Then
         m_LastStatus = 99
     End If
-	
+        
     CleanupTempFolder
 End Function
 
@@ -150,15 +171,6 @@ Private Sub CleanupTempFolder()
         On Error GoTo 0
     End If
 End Sub
-
-Private Type GUID
-    Data1 As Long
-    Data2 As Integer
-    Data3 As Integer
-    Data4(0 To 7) As Byte
-End Type
-
-Private Declare PtrSafe Function CoCreateGuid Lib "ole32" (ByRef pguid As GUID) As Long
 
 Private Function NewGuid() As String
     Dim g As GUID
@@ -222,7 +234,7 @@ Private Function ExtractExcelPages(ByVal filePath As String) As Collection
         sheetText = ""
         
         On Error Resume Next
-        lastRow = ws.Cells.SpecialCells(xlCellTypeLastCell).Row
+        lastRow = ws.Cells.SpecialCells(xlCellTypeLastCell).row
         lastCol = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
         On Error GoTo 0
         
@@ -429,7 +441,7 @@ Private Function ExtractXmlPages(ByVal filePath As String) As Collection
     
     Dim text As String
     If Not xmlDoc.DocumentElement Is Nothing Then
-        text = xmlDoc.DocumentElement.Text
+        text = xmlDoc.DocumentElement.text
     End If
     Set xmlDoc = Nothing
     
@@ -492,7 +504,7 @@ Private Function ExtractMsgPages(ByVal filePath As String) As Collection
         Exit Function
     End If
     
-    subject = oItem.Subject
+    subject = oItem.subject
     If Len(oItem.Body) > 0 Then
         bodyText = oItem.Body
     ElseIf Len(oItem.HTMLBody) > 0 Then
@@ -543,7 +555,7 @@ Private Function ExtractMsgAttachmentsAsCollection(ByVal oItem As Object) As Col
     Dim prevType As String
     
     For Each att In oItem.Attachments
-        ext = LCase(GetExtension(att.FileName))
+        ext = LCase(GetExtension(att.filename))
         tempPath = tempFolder & "\" & NewGuid() & "." & ext
         
         On Error Resume Next
@@ -848,7 +860,7 @@ Private Function DecodeBase64Attachment(ByVal part As String) As Byte()
     Dim node As Object
     Set node = xmlDoc.createElement("b64")
     node.DataType = "bin.base64"
-    node.Text = Mid(part, base64Start + 4)
+    node.text = Mid(part, base64Start + 4)
     
     DecodeBase64Attachment = node.NodeTypedValue
     
@@ -870,10 +882,3 @@ Private Function StripHtmlTags(ByVal html As String) As String
     On Error GoTo 0
 End Function
 
-Private Sub Class_Initialize()
-    m_CurrentType = ""
-    m_CurrentDepth = 0
-    m_ExtractAttachments = True
-    m_LastStatus = 0
-    m_TempFolder = ""
-End Sub
