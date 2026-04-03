@@ -23,7 +23,7 @@ End Type
 #End If
 
 Private Const MaxRecursionDepth As Long = 5
-Private Const MaxFileSizeBytes As Long = 30 * 1024 * 1024
+Private Const MaxFileSizeBytes As Long = 30& * 1024 * 1024
 
 Private m_PdfParser As PdfParser
 Private m_WinOCR As WinOCR
