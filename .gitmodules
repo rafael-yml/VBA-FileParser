@@ -1,0 +1,3 @@
+[submodule "helpers/PdfParser"]
+	path = helpers/PdfParser
+	url = https://github.com/rafael-yml/VBA-PdfParser.git
