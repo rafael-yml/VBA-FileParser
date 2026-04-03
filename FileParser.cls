@@ -35,14 +35,6 @@ Private m_ExtractAttachments As Boolean
 Private m_LastStatus As Long
 Private m_TempFolder As String
 
-Private Sub Class_Initialize()
-    m_CurrentType = ""
-    m_CurrentDepth = 0
-    m_ExtractAttachments = True
-    m_LastStatus = 0
-    m_TempFolder = ""
-End Sub
-
 Public Property Get Parser() As PdfParser
     If m_PdfParser Is Nothing Then
         Set m_PdfParser = New PdfParser
@@ -57,6 +49,14 @@ End Property
 Public Property Get LastStatus() As Long
     LastStatus = m_LastStatus
 End Property
+
+Private Sub Class_Initialize()
+    m_CurrentType = ""
+    m_CurrentDepth = 0
+    m_ExtractAttachments = True
+    m_LastStatus = 0
+    m_TempFolder = ""
+End Sub
 
 Public Function ExtractText(ByVal filePath As String, Optional ByVal extractAttachments As Boolean = True) As String
     Dim pages As Collection
