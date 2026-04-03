@@ -163,13 +163,6 @@ Private Sub CleanupTempFolder()
         On Error GoTo 0
         m_TempFolder = ""
     End If
-    
-    If Not m_Outlook Is Nothing Then
-        On Error Resume Next
-        m_Outlook.Quit
-        Set m_Outlook = Nothing
-        On Error GoTo 0
-    End If
 End Sub
 
 Private Function NewGuid() As String
