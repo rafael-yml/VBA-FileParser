@@ -123,10 +123,10 @@ End Sub
 - **filePath**: Full path to the file to extract text from
 - **extractAttachments**: For email files, whether to recursively extract attachment text (default: True)
 - **Returns**: All extracted text concatenated with line breaks
-- **Note**: For email files, subject is prepended as `[Subject: ...]`
 
 #### ExtractPages(filePath As String) As Collection
 - **filePath**: Full path to the file to extract pages from
+- **extractAttachments**: For email files, whether to recursively extract attachment text (default: True)
 - **Returns**: Collection where each item is text from a page/sheet/item
   - PDF: Each page
   - Excel: Each sheet
@@ -183,7 +183,34 @@ FileParser/
 ├── README.md
 └── LICENSE
 ```
+---
+
+## Dependencies
+
+| Helper | What it does |
+|---|---|
+| [VBA-PdfParser](https://github.com/rafael-yml/VBA-PdfParser) | Wrapper function for fully-featured PDF text extraction (uses the classes below) |
+| [VBA-PdfTXT](https://github.com/rafael-yml/VBA-PdfTXT) | Pure VBA PDF text extraction |
+| [VBA-PdfWRT](https://github.com/rafael-yml/VBA-PdfWRT) | PDF → PNG via WinRT |
+| [VBA-WinOCR](https://github.com/rafael-yml/VBA-WinOCR) | Image → text via Windows OCR |
+| [VBA-WdCOM](https://github.com/rafael-yml/VBA-WdCOM) | Word COM automation fallback |
+
+All helpers are included as git submodules in the `helpers/` directory.
+
+---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Credits
+
+- [VBA-PdfParser](https://github.com/rafael-yml/VBA-PdfParser)
+- [VBA-PdfTXT](https://github.com/rafael-yml/VBA-PdfTXT)
+- [VBA-PdfWRT](https://github.com/rafael-yml/VBA-PdfWRT)
+- [VBA-WinOCR](https://github.com/rafael-yml/VBA-WinOCR)
+- [VBA-WdCOM](https://github.com/rafael-yml/VBA-WdCOM)
+
+Copyright © 2026, [rafael-yml](https://rafael-yml.lovable.app/)
