@@ -22,12 +22,12 @@ A comprehensive VBA class library for extracting text from various file formats 
 
 1. In your VBA project, import the following files:
    - `FileParser.cls` (main class)
-   - From `helpers/PdfParser/`:
+   - From `PdfParser/` (submodule):
      - `PdfParser.cls` (pdf wrapper class)
-     - `helpers/PdfTXT/PdfTXT.cls`
-     - `helpers/PdfWRT/PdfWRT.cls`
-     - `helpers/WinOCR/WinOCR.cls`
-     - `helpers/WdCOM/WdCOM.cls`
+     - `PdfTXT/PdfTXT.cls`
+     - `PdfWRT/PdfWRT.cls`
+     - `WinOCR/WinOCR.cls`
+     - `WdCOM/WdCOM.cls`
 
 2. Required References (in VBA Editor > Tools > References):
    - Microsoft Scripting Runtime
@@ -175,14 +175,12 @@ End Sub
 ```
 FileParser/
 ├── FileParser.cls              # Main class
-├── helpers/
-│   └── PdfParser/              # Submodule
-│       ├── PdfParser.cls
-│       ├── helpers/
-│       │   ├── PdfTXT/
-│       │   ├── PdfWRT/
-│       │   ├── WinOCR/
-│       │   └── WdCOM/
+├── PdfParser/                  # Submodule (with nested submodules)
+│   ├── PdfParser.cls
+│   ├── PdfTXT/
+│   ├── PdfWRT/
+│   ├── WinOCR/
+│   └── WdCOM/
 ├── README.md
 └── LICENSE
 ```
@@ -198,7 +196,7 @@ FileParser/
 | [VBA-WinOCR](https://github.com/rafael-yml/VBA-WinOCR) | Image → text via Windows OCR |
 | [VBA-WdCOM](https://github.com/rafael-yml/VBA-WdCOM) | Word COM automation fallback |
 
-All helpers are included as git submodules in the `helpers/` directory.
+All helpers are included as git submodules in the `PdfParser/` directory.
 
 ---
 
