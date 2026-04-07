@@ -122,6 +122,8 @@ Public Function ExtractPages(ByVal filePath As String, Optional ByVal extractAtt
             Set ExtractPages = ExtractMsgPages(filePath)
         Case "eml"
             Set ExtractPages = ExtractEmlPages(filePath)
+        Case "zip"
+            Set ExtractPages = ExtractZipPages(filePath)
     End Select
     
     If ExtractPages.Count = 0 And m_LastStatus = 0 Then
@@ -627,6 +629,76 @@ Private Function ExtractEmlPages(ByVal filePath As String) As Collection
     End If
     
     If ExtractEmlPages.Count <= 1 And Len(bodyText) = 0 Then m_LastStatus = 81
+End Function
+
+Private Function ExtractZipPages(ByVal filePath As String) As Collection
+    Set ExtractZipPages = New Collection
+    m_CurrentType = "Zip"
+    m_LastStatus = 0
+    
+    Dim sh As Object
+    Dim zipFolder As Object
+    Dim item As Object
+    Dim tempFolder As String
+    
+    On Error Resume Next
+    Set sh = CreateObject("Shell.Application")
+    Set zipFolder = sh.NameSpace(filePath)
+    On Error GoTo 0
+    
+    If zipFolder Is Nothing Then
+        m_LastStatus = 90
+        Exit Function
+    End If
+    
+    tempFolder = GetTempFolder()
+    
+    For Each item In zipFolder.Items
+        Dim ext As String
+        ext = LCase(GetExtension(item.Path))
+        
+        If ext = "zip" And m_CurrentDepth < MaxRecursionDepth Then
+            m_CurrentDepth = m_CurrentDepth + 1
+            Dim nestedPages As Collection
+            Set nestedPages = ExtractZipPages(item.Path)
+            Dim nestedPage As Variant
+            For Each nestedPage In nestedPages
+                If Len(CStr(nestedPage)) > 0 Then
+                    ExtractZipPages.Add nestedPage
+                End If
+            Next
+            m_CurrentDepth = m_CurrentDepth - 1
+        Else
+            Dim tempPath As String
+            tempPath = tempFolder & "\" & item.Name
+            
+            On Error Resume Next
+            zipFolder.CopyHere item.Path, 16
+            On Error GoTo 0
+            
+            If Len(Dir(tempPath)) > 0 Then
+                Dim prevType As String
+                prevType = m_CurrentType
+                
+                Dim filePages As Collection
+                Set filePages = ExtractPages(tempPath)
+                Dim page As Variant
+                For Each page In filePages
+                    If Len(CStr(page)) > 0 Then
+                        ExtractZipPages.Add page
+                    End If
+                Next
+                
+                m_CurrentType = prevType
+                
+                On Error Resume Next
+                Kill tempPath
+                On Error GoTo 0
+            End If
+        End If
+    Next
+    
+    If ExtractZipPages.Count = 0 Then m_LastStatus = 91
 End Function
 
 Private Function ExtractEmlHeader(ByVal content As String, ByVal headerName As String) As String

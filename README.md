@@ -1,6 +1,6 @@
 # VBA-FileParser
 
-A comprehensive VBA class library for extracting text from various file formats including PDF (using [PdfParser](https://github.com/rafael-yml/VBA-PdfParser)), Excel, Word, TXT, HTML, XML, Images, and Email files (.msg, .eml).
+A comprehensive VBA class library for extracting text from various file formats including PDF (using [PdfParser](https://github.com/rafael-yml/VBA-PdfParser)), Excel, Word, TXT, HTML, XML, Images, Email files (.msg, .eml), and ZIP archives.
 
 ## Features
 
@@ -11,6 +11,7 @@ A comprehensive VBA class library for extracting text from various file formats 
 - **HTML**: Extract text from HTML files
 - **XML**: Extract text from XML files
 - **Images**: OCR extraction from PNG, JPG, JPEG, GIF, BMP, WebP, TIFF, TIF (using Windows.Media.Ocr)
+- **ZIP**: Extract text from .zip files, including nested ZIPs (using Shell.Application)
 - **Email**: 
   - `.msg` files (using Outlook COM)
   - `.eml` files (parsed from raw file, supports quoted-printable and Base64)
@@ -158,6 +159,8 @@ End Sub
   - `72` = Msg: no content
   - `80` = Eml: failed to open file
   - `81` = Eml: no content
+  - `90` = Zip: failed to open
+  - `91` = Zip: no content extracted
 
 #### Parser As PdfParser (Property)
 - **Returns**: Reference to the underlying PdfParser instance for tuning
