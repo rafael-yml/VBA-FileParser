@@ -653,26 +653,54 @@ Private Function ExtractZipPages(ByVal filePath As String) As Collection
     
     tempFolder = GetTempFolder()
     
+    Dim retries As Long
+    
     For Each item In zipFolder.Items
         Dim ext As String
-        ext = LCase(GetExtension(item.Path))
+        ext = LCase(GetExtension(item.Name))
         
         If ext = "zip" And m_CurrentDepth < MaxRecursionDepth Then
-            m_CurrentDepth = m_CurrentDepth + 1
-            Dim nestedPages As Collection
-            Set nestedPages = ExtractZipPages(item.Path)
-            Dim nestedPage As Variant
-            For Each nestedPage In nestedPages
-                If Len(CStr(nestedPage)) > 0 Then
-                    ExtractZipPages.Add nestedPage
+            Dim nestedZipPath As String
+            nestedZipPath = tempFolder & "\" & item.Name
+            
+            Dim nestedExtracted As Boolean
+            nestedExtracted = False
+            
+            For retries = 1 To 10
+                On Error Resume Next
+                zipFolder.CopyHere item.Path, 16
+                On Error GoTo 0
+                
+                On Error Resume Next
+                Application.Wait Now + TimeValue("0:00:00.5")
+                On Error GoTo 0
+                
+                If Len(Dir(nestedZipPath)) > 0 Then
+                    nestedExtracted = True
+                    Exit For
                 End If
             Next
-            m_CurrentDepth = m_CurrentDepth - 1
+            
+            If nestedExtracted Then
+                m_CurrentDepth = m_CurrentDepth + 1
+                Dim nestedPages As Collection
+                Set nestedPages = ExtractZipPages(nestedZipPath)
+                Dim nestedPage As Variant
+                For Each nestedPage In nestedPages
+                    If Len(CStr(nestedPage)) > 0 Then
+                        ExtractZipPages.Add nestedPage
+                    End If
+                Next
+                m_CurrentDepth = m_CurrentDepth - 1
+                
+                On Error Resume Next
+                Kill nestedZipPath
+                On Error GoTo 0
+            End If
         Else
             Dim tempPath As String
             tempPath = tempFolder & "\" & item.Name
             
-            Dim retries As Long
             Dim extracted As Boolean
             extracted = False
             
