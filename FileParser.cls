@@ -672,11 +672,26 @@ Private Function ExtractZipPages(ByVal filePath As String) As Collection
             Dim tempPath As String
             tempPath = tempFolder & "\" & item.Name
             
-            On Error Resume Next
-            zipFolder.CopyHere item.Path, 16
-            On Error GoTo 0
+            Dim retries As Long
+            Dim extracted As Boolean
+            extracted = False
             
-            If Len(Dir(tempPath)) > 0 Then
+            For retries = 1 To 10
+                On Error Resume Next
+                zipFolder.CopyHere item.Path, 16
+                On Error GoTo 0
+                
+                On Error Resume Next
+                Application.Wait Now + TimeValue("0:00:00.5")
+                On Error GoTo 0
+                
+                If Len(Dir(tempPath)) > 0 Then
+                    extracted = True
+                    Exit For
+                End If
+            Next
+            
+            If extracted Then
                 Dim prevType As String
                 prevType = m_CurrentType
                 
