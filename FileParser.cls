@@ -364,7 +364,9 @@ Private Function ExtractTextPages(ByVal filePath As String) As Collection
     End If
     
     Dim content As String
+	On Error Resume Next
     content = file.ReadAll
+	On Error GoTo 0
     file.Close
     Set file = Nothing
     Set fso = Nothing
@@ -395,7 +397,9 @@ Private Function ExtractHtmlPages(ByVal filePath As String) As Collection
     End If
     
     Dim htmlContent As String
+	On Error Resume Next
     htmlContent = file.ReadAll
+	On Error GoTo 0
     file.Close
     Set file = Nothing
     Set fso = Nothing
@@ -597,7 +601,9 @@ Private Function ExtractEmlPages(ByVal filePath As String) As Collection
     End If
     
     Dim content As String
+	On Error Resume Next
     content = file.ReadAll
+	On Error GoTo 0
     file.Close
     Set file = Nothing
     Set fso = Nothing
