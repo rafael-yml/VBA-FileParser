@@ -224,12 +224,16 @@ Private Function ExtractExcelPages(ByVal filePath As String) As Collection
         Exit Function
     End If
     
-    For sheetIndex = 1 To wb.Worksheets.Count
+For sheetIndex = 1 To wb.Worksheets.Count
         Set ws = wb.Worksheets(sheetIndex)
         sheetText = ""
         
         On Error Resume Next
-        lastRow = ws.Cells.SpecialCells(xlCellTypeLastCell).row
+        ws.Cells.UnMerge
+        On Error GoTo 0
+        
+        On Error Resume Next
+        lastRow = ws.Cells.SpecialCells(xlCellTypeLastCell).Row
         lastCol = ws.Cells.SpecialCells(xlCellTypeLastCell).Column
         On Error GoTo 0
         
