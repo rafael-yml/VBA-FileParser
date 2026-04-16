@@ -410,7 +410,7 @@ Private Function ExtractHtmlPages(ByVal filePath As String) As Collection
     
     Dim htmlDoc As Object
     On Error Resume Next
-    Set htmlDoc = CreateObject("MSHTML.HTMLFile")
+    Set htmlDoc = CreateObject("htmlfile")
     htmlDoc.Body.innerHTML = htmlContent
     Dim text As String
     text = htmlDoc.Body.innerText
@@ -993,7 +993,7 @@ Private Function StripHtmlTags(ByVal html As String) As String
     
     Dim htmlDoc As Object
     On Error Resume Next
-    Set htmlDoc = CreateObject("MSHTML.HTMLFile")
+    Set htmlDoc = CreateObject("htmlfile")
     htmlDoc.Body.innerHTML = html
     StripHtmlTags = htmlDoc.Body.innerText
     Set htmlDoc = Nothing
