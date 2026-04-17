@@ -118,12 +118,14 @@ Public Function ExtractPages(ByVal filePath As String, Optional ByVal extractAtt
             Set ExtractPages = ExtractXmlPages(filePath)
         Case "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "tif"
             Set ExtractPages = ExtractImagePages(filePath)
-        Case "msg"
+Case "msg"
             Set ExtractPages = ExtractMsgPages(filePath)
         Case "eml"
             Set ExtractPages = ExtractEmlPages(filePath)
         Case "zip"
             Set ExtractPages = ExtractZipPages(filePath)
+        Case "rtf"
+            Set ExtractPages = ExtractRtfPages(filePath)
     End Select
     
     If ExtractPages.Count = 0 And m_LastStatus = 0 Then
@@ -752,6 +754,52 @@ Private Function ExtractZipPages(ByVal filePath As String) As Collection
     Next
     
     If ExtractZipPages.Count = 0 Then m_LastStatus = 91
+End Function
+
+Private Function ExtractRtfPages(ByVal filePath As String) As Collection
+    Set ExtractRtfPages = New Collection
+    m_CurrentType = "Rtf"
+    m_LastStatus = 0
+    
+    Dim fso As Object
+    Dim file As Object
+    
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    On Error Resume Next
+    Set file = fso.OpenTextFile(filePath, 1)
+    On Error GoTo 0
+    
+    If file Is Nothing Then
+        m_LastStatus = 100
+        Exit Function
+    End If
+    
+    Dim rtfContent As String
+    On Error Resume Next
+    rtfContent = file.ReadAll
+    On Error GoTo 0
+    file.Close
+    Set file = Nothing
+    Set fso = Nothing
+    
+    If Len(rtfContent) > 0 Then
+        Dim htmlDoc As Object
+        On Error Resume Next
+        Set htmlDoc = CreateObject("htmlfile")
+        htmlDoc.Body.innerHTML = rtfContent
+        Dim text As String
+        text = htmlDoc.Body.innerText
+        Set htmlDoc = Nothing
+        On Error GoTo 0
+        
+        If Len(text) > 0 Then
+            ExtractRtfPages.Add text
+        Else
+            m_LastStatus = 101
+        End If
+    Else
+        m_LastStatus = 101
+    End If
 End Function
 
 Private Function ExtractEmlHeader(ByVal content As String, ByVal headerName As String) As String
