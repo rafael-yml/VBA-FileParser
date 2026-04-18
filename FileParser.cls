@@ -118,7 +118,7 @@ Public Function ExtractPages(ByVal filePath As String, Optional ByVal extractAtt
             Set ExtractPages = ExtractXmlPages(filePath)
         Case "png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "tif"
             Set ExtractPages = ExtractImagePages(filePath)
-Case "msg"
+		Case "msg"
             Set ExtractPages = ExtractMsgPages(filePath)
         Case "eml"
             Set ExtractPages = ExtractEmlPages(filePath)
